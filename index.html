@@ -1,1 +1,487 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Make Him Cross The Line</title>
+<style>
+  :root{
+    --ink: #1c1c1c;
+    --ribbon: #c1392b;
+    --ribbon-dark: #8e2a20;
+    --skin: #e3b48c;
+    --hair: #171310;
+    --shirt: #17181b;
+    --pants: #101012;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; height:100%; font-family:-apple-system, BlinkMacSystemFont,"Segoe UI",sans-serif; overflow:hidden; }
+  #stage{ position:relative; width:100vw; height:100vh; overflow:hidden; background:#000; }
+  .scene{ position:absolute; inset:0; display:none; }
+  .scene.active{ display:block; }
 
+  /* ================= CLIMB SCENE ================= */
+  #scene-climb{ background:#ffffff; }
+
+  .top-line{
+    position:absolute; top:calc(50% - 46px); left:0; right:0;
+    text-align:center; font-size:1rem; font-weight:700; color:var(--ink);
+    letter-spacing:0.02em; z-index:4;
+  }
+  .ribbon{
+    position:absolute; top:50%; left:0; right:0; height:14px;
+    transform: translateY(-50%);
+    background: linear-gradient(180deg, var(--ribbon), var(--ribbon-dark));
+    box-shadow: 0 2px 4px rgba(0,0,0,0.25);
+    z-index:3;
+  }
+  .ribbon::before, .ribbon::after{
+    content:""; position:absolute; top:0; width:14px; height:14px;
+    background: var(--ribbon-dark);
+  }
+  .ribbon::before{ left:6%; clip-path: polygon(0 0,100% 0,50% 100%); }
+  .ribbon::after{ right:6%; clip-path: polygon(0 0,100% 0,50% 100%); }
+
+  .floor-hint{
+    position:absolute; bottom:6%; left:50%; transform:translateX(-50%);
+    font-size:0.72rem; color:#888; text-align:center; max-width:260px; z-index:4;
+  }
+
+  .up-arrow{
+    position:absolute; right:6%; bottom:14%;
+    width:64px; height:64px; border-radius:50%;
+    border:2px solid var(--ink); background:#fff;
+    cursor:pointer; z-index:6;
+    display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 3px 6px rgba(0,0,0,0.15);
+    transition: transform 0.08s ease;
+    user-select:none;
+  }
+  .up-arrow:active{ transform: scale(0.92); }
+  .up-arrow svg{ width:26px; height:26px; }
+  .arrow-label{
+    position:absolute; right:6%; bottom:8.2%;
+    font-size:0.62rem; color:#666; z-index:6;
+  }
+
+  .guy{
+    position:absolute; left:38%; bottom:20px;
+    width:70px; height:110px;
+    transition: bottom 0.15s ease-out;
+    z-index:5;
+  }
+  .guy.launching{ transition: bottom 0.9s cubic-bezier(.5,0,.7,1); }
+  .guy svg{ width:100%; height:100%; display:block; overflow:visible; }
+
+  .ceiling-crack{
+    position:absolute; top:0; left:38%; transform:translateX(-30%);
+    width:0; height:0; background:#111; border-radius: 0 0 50% 50%;
+    transition: width 0.4s ease, height 0.4s ease; z-index:7;
+  }
+  .ceiling-crack.open{ width:110px; height:60px; }
+
+  #stage.shake{ animation: shakeIt 0.5s ease-in-out; }
+  @keyframes shakeIt{
+    0%,100%{ transform: translate(0,0); }
+    20%{ transform: translate(-6px,4px); }
+    40%{ transform: translate(6px,-4px); }
+    60%{ transform: translate(-4px,-6px); }
+    80%{ transform: translate(4px,6px); }
+  }
+
+  /* slow-lose overlay */
+  .slow-lose{
+    position:absolute; inset:0; background: rgba(255,255,255,0.96);
+    display:flex; align-items:center; justify-content:center; flex-direction:column;
+    opacity:0; pointer-events:none; transition: opacity 0.6s ease; z-index:20;
+  }
+  .slow-lose.show{ opacity:1; pointer-events:auto; }
+  .slow-lose h2{ margin:0; font-size:2.1rem; color:var(--ribbon-dark); letter-spacing:0.04em; }
+  .slow-lose p{ margin:10px 0 26px; font-size:0.95rem; color:#444; }
+  .slow-lose button{
+    padding:10px 22px; border-radius:8px; border:1px solid var(--ink);
+    background:#fff; cursor:pointer; font-size:0.8rem; letter-spacing:0.03em;
+  }
+
+  /* ================= SPACE ================= */
+  #scene-space{ background: radial-gradient(ellipse at 30% 20%, #1b2550 0%, #05070f 70%); }
+  .star{ position:absolute; width:2px; height:2px; background:#fff; border-radius:50%; opacity:0.8; animation: twinkle 2.4s ease-in-out infinite; }
+  @keyframes twinkle{ 0%,100%{ opacity:0.25; } 50%{ opacity:1; } }
+  .planet{
+    position:absolute; top:14%; right:12%; width:120px; height:120px; border-radius:50%;
+    background: radial-gradient(circle at 35% 30%, #c98a4b, #7a4a20 75%);
+    box-shadow: 0 0 40px rgba(200,140,80,0.2);
+  }
+
+  .space-guy{
+    position:absolute; top:38%; left:38%; width:130px; height:170px;
+    animation: driftFar 10s ease-in-out infinite;
+    filter: drop-shadow(0 0 18px rgba(120,150,255,0.15));
+  }
+  .space-guy svg{ width:100%; height:100%; display:block; overflow:visible; }
+  .space-guy .tumble{ width:100%; height:100%; animation: tumbleSpin 4.5s linear infinite; transform-origin: 50% 55%; }
+  @keyframes driftFar{
+    0%{ transform: translate(0,0); }
+    20%{ transform: translate(120px,-60px); }
+    40%{ transform: translate(-90px,-110px); }
+    60%{ transform: translate(-160px,30px); }
+    80%{ transform: translate(60px,90px); }
+    100%{ transform: translate(0,0); }
+  }
+  @keyframes tumbleSpin{ 0%{ transform: rotate(0deg); } 100%{ transform: rotate(360deg); } }
+  .space-guy.settling{ animation:none; transition: transform 1.4s ease-out; }
+  .space-guy.settling .tumble{ animation:none; transition: transform 1.4s ease-out; transform: rotate(0deg); }
+
+  .space-guy .inflate-body{
+    transform-box: fill-box; transform-origin: 50% 50%;
+    transition: transform 0.55s ease-in-out, filter 0.55s ease-in-out;
+  }
+  .space-guy.puff-1 .inflate-body{ transform: scale(1.22); filter: saturate(1.15); }
+  .space-guy.puff-2 .inflate-body{ transform: scale(1.55); filter: saturate(1.35) brightness(1.05); }
+  .space-guy.puff-3 .inflate-body{ transform: scale(1.95); filter: saturate(1.6) brightness(1.1); }
+  .space-guy.puff-max .inflate-body{
+    transform: scale(2.5); filter: saturate(2) brightness(1.2);
+    animation: strain 0.18s ease-in-out infinite;
+  }
+  @keyframes strain{
+    0%,100%{ transform: scale(2.5) rotate(0deg); }
+    50%{ transform: scale(2.56) rotate(1.5deg); }
+  }
+  .space-guy.hidden{ display:none; }
+
+  .space-caption{
+    position:absolute; top:16%; left:50%; transform:translateX(-50%);
+    color:#cfd6f0; font-size:0.85rem; opacity:0; text-align:center; transition: opacity 1s ease;
+  }
+  .space-caption.show{ opacity:0.8; }
+
+  .choice-row{
+    position:absolute; bottom:14%; left:50%; transform:translateX(-50%);
+    display:flex; gap:22px; opacity:0; pointer-events:none; transition: opacity 1s ease;
+  }
+  .choice-row.show{ opacity:1; pointer-events:auto; }
+  .choice-btn{
+    padding:12px 26px; font-size:0.9rem; letter-spacing:0.04em; border-radius:3px;
+    border:1px solid rgba(255,255,255,0.35); background: rgba(255,255,255,0.06);
+    color:#e7ebff; cursor:pointer; transition: background 0.2s ease, transform 0.15s ease;
+  }
+  .choice-btn:hover{ background: rgba(255,255,255,0.16); transform: translateY(-2px); }
+
+  .particle{ position:absolute; width:9px; height:9px; border-radius:50%; background:#b8291f; top:44%; left:47%; opacity:0; }
+  .particle.skin{ background:#e3b48c; width:7px; height:7px; }
+  .particle.dark{ background:#17181b; width:6px; height:6px; }
+  .flash{ position:absolute; inset:0; background:#fff; opacity:0; pointer-events:none; z-index:30; }
+  .flash.go{ animation: flashPop 0.5s ease-out; }
+  @keyframes flashPop{ 0%{ opacity:0; } 15%{ opacity:1; } 100%{ opacity:0; } }
+
+  /* ================= GAME OVER ================= */
+  #scene-gameover{ background:#0a0000; }
+  .blot{
+    position:absolute; background: radial-gradient(circle, #7a0808 0%, #4d0505 70%, transparent 75%);
+    border-radius: 45% 55% 60% 40% / 50% 45% 55% 50%; opacity:0; transition: opacity 0.8s ease;
+  }
+  .blot.show{ opacity:0.9; }
+  .gameover-text{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); text-align:center;
+    font-family:"Courier New", Courier, monospace; color:#f4f4f4; opacity:0;
+    transition: opacity 1.2s ease 0.4s;
+  }
+  .gameover-text.show{ opacity:1; }
+  .gameover-text .line1{ font-size:2rem; letter-spacing:0.08em; margin:0 0 10px; }
+  .gameover-text .line2{ font-size:1rem; letter-spacing:0.06em; opacity:0.85; margin:0; }
+  .restart-btn{
+    position:absolute; bottom:10%; left:50%; transform:translateX(-50%);
+    padding:10px 22px; background:transparent; border:1px solid rgba(255,255,255,0.3);
+    color:#ddd; font-family:"Courier New", Courier, monospace; letter-spacing:0.05em;
+    cursor:pointer; opacity:0; transition: opacity 1s ease 1.4s, background 0.2s ease;
+  }
+  .restart-btn.show{ opacity:1; }
+  .restart-btn:hover{ background: rgba(255,255,255,0.1); }
+</style>
+</head>
+<body>
+
+<div id="stage">
+
+  <!-- CLIMB -->
+  <div class="scene active" id="scene-climb">
+    <div class="ceiling-crack" id="ceilingCrack"></div>
+    <div class="top-line">Make Him Cross The Line</div>
+    <div class="ribbon"></div>
+
+    <div class="guy" id="climbGuy">
+      <svg viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg">
+        <!-- legs -->
+        <rect x="52" y="118" width="14" height="50" rx="6" fill="#101012"/>
+        <rect x="72" y="118" width="14" height="50" rx="6" fill="#101012"/>
+        <ellipse cx="59" cy="170" rx="11" ry="6" fill="#000"/>
+        <ellipse cx="79" cy="170" rx="11" ry="6" fill="#000"/>
+        <!-- torso -->
+        <rect x="46" y="66" width="48" height="56" rx="12" fill="#17181b"/>
+        <path d="M60,66 L58,86 L70,80 L82,86 L80,66 Z" fill="#0d0e10"/>
+        <!-- arms -->
+        <rect x="26" y="70" width="14" height="50" rx="7" fill="#17181b" transform="rotate(8 33 70)"/>
+        <rect x="100" y="70" width="14" height="50" rx="7" fill="#17181b" transform="rotate(-8 107 70)"/>
+        <ellipse cx="30" cy="122" rx="8" ry="7" fill="#e3b48c"/>
+        <ellipse cx="110" cy="122" rx="8" ry="7" fill="#e3b48c"/>
+        <!-- neck + head -->
+        <rect x="60" y="48" width="20" height="16" fill="#e3b48c"/>
+        <circle cx="70" cy="34" r="22" fill="#e3b48c"/>
+        <path d="M52,42 C58,52 82,52 88,42 C84,50 56,50 52,42 Z" fill="#cf9a6f" opacity="0.55"/>
+        <!-- hair -->
+        <path d="M42,28
+                 C38,10 52,-2 70,-2
+                 C92,-2 102,12 98,30
+                 C95,20 92,28 88,18
+                 C86,28 80,16 77,24
+                 C75,14 68,22 65,14
+                 C62,24 56,14 53,22
+                 C51,14 44,20 44,28
+                 C43,32 42,32 42,28 Z" fill="#171310"/>
+      </svg>
+    </div>
+
+    <div class="up-arrow" id="upArrow" aria-label="Move up">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="12" y1="20" x2="12" y2="4"></line>
+        <polyline points="5 11 12 4 19 11"></polyline>
+      </svg>
+    </div>
+    <div class="arrow-label">press to rise</div>
+
+    <div class="floor-hint">One press lifts him a little. Do not press the arrow twice quickly.</div>
+
+    <div class="slow-lose" id="slowLose">
+      <h2>YOU LOSE</h2>
+      <p>it took so long</p>
+      <button id="slowRestart">start over</button>
+    </div>
+  </div>
+
+  <!-- SPACE -->
+  <div class="scene" id="scene-space">
+    <div class="space-caption" id="spaceCaption">he drifts. it is very quiet up here.</div>
+    <div class="planet"></div>
+    <div id="starField"></div>
+
+    <div class="space-guy" id="spaceGuy">
+      <div class="tumble">
+        <svg viewBox="0 0 140 180" xmlns="http://www.w3.org/2000/svg">
+          <g class="inflate-body">
+            <path d="M62,78 C40,72 18,60 8,44 C4,38 10,32 16,36 C30,46 48,58 66,66 Z" fill="#101012"/>
+            <ellipse cx="10" cy="40" rx="8" ry="7" fill="#e3b48c"/>
+            <path d="M70,120 C52,132 30,146 16,166 C10,172 18,180 25,175 C42,162 60,148 78,132 Z" fill="#101012"/>
+            <ellipse cx="18" cy="171" rx="11" ry="7" fill="#000"/>
+            <path d="M46,64 C42,86 42,108 48,128 C58,138 82,138 92,128 C98,108 98,86 94,64 C82,54 58,54 46,64 Z" fill="#17181b"/>
+            <path d="M60,64 L58,84 L70,78 L82,84 L80,64 Z" fill="#0d0e10"/>
+            <path d="M72,124 C88,136 108,150 122,168 C128,175 120,182 113,177 C98,164 82,150 66,134 Z" fill="#101012"/>
+            <ellipse cx="120" cy="173" rx="11" ry="7" fill="#000"/>
+            <path d="M78,76 C98,68 118,54 128,38 C132,32 126,26 120,30 C106,42 90,56 74,66 Z" fill="#17181b"/>
+            <ellipse cx="128" cy="34" rx="8" ry="7" fill="#e3b48c"/>
+            <rect x="118" y="30" width="9" height="6" rx="2" fill="#eee"/>
+            <rect x="62" y="46" width="16" height="14" fill="#e3b48c"/>
+            <circle cx="70" cy="34" r="20" fill="#e3b48c"/>
+            <ellipse cx="52" cy="36" rx="4" ry="6" fill="#e3b48c"/>
+            <path d="M55,42 C60,50 80,50 85,42 C82,48 58,48 55,42 Z" fill="#cf9a6f" opacity="0.6"/>
+            <path d="M44,30
+                     C40,14 52,2 70,2
+                     C90,2 100,16 96,32
+                     C93,24 90,30 86,22
+                     C84,30 79,20 76,26
+                     C74,18 68,24 66,18
+                     C63,26 58,18 55,24
+                     C53,18 47,22 47,30
+                     C46,34 44,34 44,30 Z" fill="#171310"/>
+            <path d="M42,32 C40,40 42,48 47,52 C44,44 44,36 46,30 Z" fill="#171310"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div id="particleField"></div>
+
+    <div class="choice-row" id="choiceRow">
+      <button class="choice-btn" id="saveBtn">Save him</button>
+      <button class="choice-btn" id="killBtn">Kill him</button>
+    </div>
+  </div>
+
+  <!-- GAME OVER -->
+  <div class="scene" id="scene-gameover">
+    <div class="blot" id="blot1" style="width:340px; height:260px; top:20%; left:30%;"></div>
+    <div class="blot" id="blot2" style="width:180px; height:140px; top:60%; left:55%;"></div>
+    <div class="blot" id="blot3" style="width:120px; height:100px; top:15%; left:60%;"></div>
+    <div class="gameover-text" id="gameoverText">
+      <p class="line1">YOU LOSE.</p>
+      <p class="line2">you trusted the creator.</p>
+    </div>
+    <button class="restart-btn" id="restartBtn">start over</button>
+  </div>
+
+  <div class="flash" id="flash"></div>
+
+</div>
+
+<script>
+(function(){
+  const stage = document.getElementById('stage');
+
+  // ---------- CLIMB STATE ----------
+  const climbGuy = document.getElementById('climbGuy');
+  const upArrow = document.getElementById('upArrow');
+  const ribbon = document.querySelector('.ribbon');
+  const ceilingCrack = document.getElementById('ceilingCrack');
+  const slowLose = document.getElementById('slowLose');
+
+  const STEP = 10;
+  let bottomPx = 20;
+  let launched = false;
+  let slowLost = false;
+
+  function applyBottom(px){
+    climbGuy.style.bottom = px + 'px';
+  }
+  applyBottom(bottomPx);
+
+  function checkRibbonHit(){
+    const guyRect = climbGuy.getBoundingClientRect();
+    const ribbonRect = ribbon.getBoundingClientRect();
+    if (guyRect.top <= ribbonRect.bottom){
+      triggerSlowLose();
+    }
+  }
+
+  function triggerSlowLose(){
+    if (slowLost || launched) return;
+    slowLost = true;
+    slowLose.classList.add('show');
+  }
+
+  function singleClick(){
+    if (launched || slowLost) return;
+    bottomPx += STEP;
+    applyBottom(bottomPx);
+    checkRibbonHit();
+  }
+
+  function doubleClick(){
+    if (launched || slowLost) return;
+    launched = true;
+
+    climbGuy.classList.add('launching');
+    applyBottom(1500);
+
+    stage.classList.add('shake');
+    setTimeout(() => stage.classList.remove('shake'), 500);
+    setTimeout(() => ceilingCrack.classList.add('open'), 120);
+    setTimeout(() => goToSpace(), 950);
+  }
+
+  let clickTimer = null;
+  upArrow.addEventListener('click', () => {
+    if (clickTimer !== null){
+      clearTimeout(clickTimer);
+      clickTimer = null;
+      doubleClick();
+    } else {
+      clickTimer = setTimeout(() => { singleClick(); clickTimer = null; }, 240);
+    }
+  });
+
+  document.getElementById('slowRestart').addEventListener('click', () => window.location.reload());
+
+  // ---------- SPACE STATE ----------
+  const sceneClimb = document.getElementById('scene-climb');
+  const sceneSpace = document.getElementById('scene-space');
+  const sceneGameover = document.getElementById('scene-gameover');
+  const spaceGuy = document.getElementById('spaceGuy');
+  const spaceCaption = document.getElementById('spaceCaption');
+  const choiceRow = document.getElementById('choiceRow');
+  const starField = document.getElementById('starField');
+  const flash = document.getElementById('flash');
+
+  function buildStars(){
+    starField.innerHTML = '';
+    for (let i = 0; i < 60; i++){
+      const s = document.createElement('div');
+      s.className = 'star';
+      s.style.left = Math.random() * 100 + '%';
+      s.style.top = Math.random() * 100 + '%';
+      s.style.animationDelay = (Math.random() * 2) + 's';
+      starField.appendChild(s);
+    }
+  }
+
+  function goToSpace(){
+    sceneClimb.classList.remove('active');
+    sceneSpace.classList.add('active');
+    buildStars();
+    setTimeout(() => spaceCaption.classList.add('show'), 400);
+    setTimeout(() => choiceRow.classList.add('show'), 3200);
+  }
+
+  document.getElementById('saveBtn').addEventListener('click', doom);
+  document.getElementById('killBtn').addEventListener('click', doom);
+
+  let doomed = false;
+  function doom(){
+    if (doomed) return;
+    doomed = true;
+    choiceRow.classList.remove('show');
+    spaceCaption.textContent = '...';
+
+    spaceGuy.classList.add('settling');
+    spaceGuy.style.transform = 'translate(-4%, -6%)';
+
+    setTimeout(() => spaceGuy.classList.add('puff-1'), 250);
+    setTimeout(() => spaceGuy.classList.add('puff-2'), 750);
+    setTimeout(() => spaceGuy.classList.add('puff-3'), 1300);
+    setTimeout(() => spaceGuy.classList.add('puff-max'), 1850);
+
+    setTimeout(() => {
+      burstParticles();
+      flash.classList.add('go');
+      spaceGuy.classList.add('hidden');
+    }, 2300);
+    setTimeout(() => goToGameOver(), 3100);
+  }
+
+  function burstParticles(){
+    const field = document.getElementById('particleField');
+    field.innerHTML = '';
+    for (let i = 0; i < 34; i++){
+      const p = document.createElement('div');
+      const kind = i % 3 === 0 ? 'skin' : (i % 5 === 0 ? 'dark' : '');
+      p.className = 'particle' + (kind ? ' ' + kind : '');
+      const angle = (Math.PI * 2 * i) / 34 + Math.random() * 0.3;
+      const dist = 90 + Math.random() * 200;
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      p.style.transition = 'transform 0.8s ease-out, opacity 0.8s ease-out';
+      field.appendChild(p);
+      requestAnimationFrame(() => {
+        p.style.opacity = '1';
+        p.style.transform = `translate(${dx}px, ${dy}px)`;
+      });
+      setTimeout(() => { p.style.opacity = '0'; }, 500);
+    }
+  }
+
+  function goToGameOver(){
+    sceneSpace.classList.remove('active');
+    sceneGameover.classList.add('active');
+    setTimeout(() => {
+      document.getElementById('blot1').classList.add('show');
+      document.getElementById('blot2').classList.add('show');
+      document.getElementById('blot3').classList.add('show');
+    }, 120);
+    setTimeout(() => document.getElementById('gameoverText').classList.add('show'), 500);
+    setTimeout(() => document.getElementById('restartBtn').classList.add('show'), 900);
+  }
+
+  document.getElementById('restartBtn').addEventListener('click', () => window.location.reload());
+
+})();
+</script>
+
+</body>
+</html>
