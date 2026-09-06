@@ -194,11 +194,12 @@ For Hardware:
 
 ### Project Demo
 # Video
-[Add your demo video link here]
+
+https://drive.google.com/file/d/1H6Fd77TCrDNojUDQ0LV05ATzlFxMZEhR/view?usp=sharing
 *Explain what the video demonstrates*
 
 # Additional Demos
-[Add any extra demo materials/links]
+[Add any extra de]
 
 ## Team Contributions
 - [Kevin Twinkle]: [Specific contributions]
